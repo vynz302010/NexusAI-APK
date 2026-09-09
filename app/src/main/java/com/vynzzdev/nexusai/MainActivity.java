@@ -94,13 +94,24 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
-                // Buka link external di browser
-                if (!url.contains("trycloudflare.com") && !url.startsWith("javascript")) {
+                // Tetap di dalam WebView untuk domain sendiri, Google Auth / Accounts, dan OAuth redirects
+                if (url.contains("ai-nexus.my.id") ||
+                    url.contains("accounts.google.com") ||
+                    url.contains("google.com/gsi") ||
+                    url.contains("gstatic.com") ||
+                    url.startsWith("javascript:") ||
+                    url.startsWith("data:")) {
+                    return false;
+                }
+                
+                // Buka link external murni di browser HP
+                try {
                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                     startActivity(intent);
-                    return true;
+                } catch (Exception e) {
+                    // Fallback
                 }
-                return false;
+                return true;
             }
 
             @Override
@@ -110,8 +121,34 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // WebChromeClient - handle file upload, progress, camera
+        // WebChromeClient - handle file upload, progress, camera, multi-window/popups
+        settings.setSupportMultipleWindows(true);
+        settings.setJavaScriptCanOpenWindowsAutomatically(true);
+
         webView.setWebChromeClient(new WebChromeClient() {
+
+            @Override
+            public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+                WebView newWebView = new WebView(MainActivity.this);
+                newWebView.getSettings().setJavaScriptEnabled(true);
+                newWebView.getSettings().setDomStorageEnabled(true);
+                newWebView.getSettings().setUserAgentString(settings.getUserAgentString());
+                newWebView.setWebViewClient(new WebViewClient() {
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest req) {
+                        String targetUrl = req.getUrl().toString();
+                        if (targetUrl.contains("ai-nexus.my.id")) {
+                            webView.loadUrl(targetUrl);
+                            return true;
+                        }
+                        return false;
+                    }
+                });
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                transport.setWebView(newWebView);
+                resultMsg.sendToTarget();
+                return true;
+            }
 
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
