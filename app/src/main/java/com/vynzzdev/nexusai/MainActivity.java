@@ -1,244 +1,42 @@
 package com.vynzzdev.nexusai;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Message;
-import android.provider.MediaStore;
-import android.view.KeyEvent;
-import android.view.View;
-import android.webkit.ConsoleMessage;
-import android.webkit.ValueCallback;
-import android.webkit.WebChromeClient;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
-import android.widget.ProgressBar;
+import androidx.browser.customtabs.CustomTabsIntent;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.FileProvider;
-
-import java.io.File;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     private static final String TARGET_URL = "https://ai-nexus.my.id/";
-    private static final int FILE_CHOOSER_REQUEST = 1;
 
-    private WebView webView;
-    private ProgressBar progressBar;
-    private ValueCallback<Uri[]> filePathCallback;
-    private Uri cameraImageUri;
-
-    @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        webView = findViewById(R.id.webview);
-        progressBar = findViewById(R.id.progressBar);
-
-        setupWebView();
-        webView.loadUrl(TARGET_URL);
-    }
-
-    @SuppressLint("SetJavaScriptEnabled")
-    private void setupWebView() {
-        WebSettings settings = webView.getSettings();
-
-        // Enable JavaScript
-        settings.setJavaScriptEnabled(true);
-
-        // Enable DOM Storage (LocalStorage, SessionStorage)
-        settings.setDomStorageEnabled(true);
-
-        // Enable database
-        settings.setDatabaseEnabled(true);
-
-        // Media & file access
-        settings.setAllowFileAccess(true);
-        settings.setAllowContentAccess(true);
-        settings.setMediaPlaybackRequiresUserGesture(false);
-
-        // Zoom
-        settings.setSupportZoom(false);
-        settings.setBuiltInZoomControls(false);
-        settings.setDisplayZoomControls(false);
-
-        // Viewport & scaling
-        settings.setLoadWithOverviewMode(true);
-        settings.setUseWideViewPort(true);
-
-        // Cache
-        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-
-        // Enable third-party cookies & DOM storage
-        android.webkit.CookieManager cookieManager = android.webkit.CookieManager.getInstance();
-        cookieManager.setAcceptCookie(true);
-        cookieManager.setAcceptThirdPartyCookies(webView, true);
-
-        // Native Chrome Custom User-Agent to allow Google One-Tap account bottomsheet
-        settings.setUserAgentString("Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
-
-        // Mixed content (HTTP di dalam HTTPS)
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-
-        // WebViewClient - handle navigation
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                String url = request.getUrl().toString();
-                // Tetap di dalam WebView untuk domain sendiri, Google Auth / Accounts, dan OAuth redirects
-                if (url.contains("ai-nexus.my.id") ||
-                    url.contains("accounts.google.com") ||
-                    url.contains("google.com/gsi") ||
-                    url.contains("gstatic.com") ||
-                    url.startsWith("javascript:") ||
-                    url.startsWith("data:")) {
-                    return false;
-                }
-                
-                // Buka link external murni di browser HP
-                try {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    startActivity(intent);
-                } catch (Exception e) {
-                    // Fallback
-                }
-                return true;
+        try {
+            CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
+            builder.setShowTitle(false);
+            builder.setUrlBarHidingEnabled(true);
+            builder.setShareState(CustomTabsIntent.SHARE_STATE_OFF);
+            
+            CustomTabsIntent customTabsIntent = builder.build();
+            customTabsIntent.intent.setData(Uri.parse(TARGET_URL));
+            customTabsIntent.intent.setPackage("com.android.chrome");
+            
+            startActivity(customTabsIntent.intent);
+        } catch (Exception e) {
+            try {
+                CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
+                CustomTabsIntent customTabsIntent = builder.build();
+                customTabsIntent.launchUrl(this, Uri.parse(TARGET_URL));
+            } catch (Exception ex) {
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(TARGET_URL));
+                startActivity(browserIntent);
             }
-
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                progressBar.setVisibility(View.GONE);
-            }
-        });
-
-        // WebChromeClient - handle file upload, progress, camera, multi-window/popups
-        settings.setSupportMultipleWindows(true);
-        settings.setJavaScriptCanOpenWindowsAutomatically(true);
-
-        webView.setWebChromeClient(new WebChromeClient() {
-
-            @Override
-            public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-                WebView newWebView = new WebView(MainActivity.this);
-                newWebView.getSettings().setJavaScriptEnabled(true);
-                newWebView.getSettings().setDomStorageEnabled(true);
-                newWebView.getSettings().setUserAgentString(settings.getUserAgentString());
-                newWebView.setWebViewClient(new WebViewClient() {
-                    @Override
-                    public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest req) {
-                        String targetUrl = req.getUrl().toString();
-                        if (targetUrl.contains("ai-nexus.my.id")) {
-                            webView.loadUrl(targetUrl);
-                            return true;
-                        }
-                        return false;
-                    }
-                });
-                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-                transport.setWebView(newWebView);
-                resultMsg.sendToTarget();
-                return true;
-            }
-
-            @Override
-            public void onProgressChanged(WebView view, int newProgress) {
-                if (newProgress < 100) {
-                    progressBar.setVisibility(View.VISIBLE);
-                    progressBar.setProgress(newProgress);
-                } else {
-                    progressBar.setVisibility(View.GONE);
-                }
-            }
-
-            @Override
-            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> callback,
-                                              FileChooserParams fileChooserParams) {
-                filePathCallback = callback;
-
-                Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                File photoFile = null;
-                try {
-                    photoFile = createImageFile();
-                    cameraImageUri = FileProvider.getUriForFile(
-                        MainActivity.this,
-                        getApplicationContext().getPackageName() + ".fileprovider",
-                        photoFile
-                    );
-                    cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraImageUri);
-                } catch (IOException e) {
-                    cameraImageUri = null;
-                }
-
-                Intent galleryIntent = new Intent(Intent.ACTION_GET_CONTENT);
-                galleryIntent.addCategory(Intent.CATEGORY_OPENABLE);
-                galleryIntent.setType("*/*");
-                galleryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-
-                Intent chooser = Intent.createChooser(galleryIntent, "Pilih File");
-                chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{cameraIntent});
-                startActivityForResult(chooser, FILE_CHOOSER_REQUEST);
-                return true;
-            }
-
-            @Override
-            public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
-                return true;
-            }
-        });
-    }
-
-    private File createImageFile() throws IOException {
-        String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-        String imageFileName = "IMG_" + timestamp + "_";
-        File storageDir = getExternalFilesDir(null);
-        return File.createTempFile(imageFileName, ".jpg", storageDir);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == FILE_CHOOSER_REQUEST) {
-            if (filePathCallback == null) return;
-            Uri[] results = null;
-            if (resultCode == Activity.RESULT_OK) {
-                if (data != null) {
-                    String dataString = data.getDataString();
-                    if (data.getClipData() != null) {
-                        int count = data.getClipData().getItemCount();
-                        results = new Uri[count];
-                        for (int i = 0; i < count; i++) {
-                            results[i] = data.getClipData().getItemAt(i).getUri();
-                        }
-                    } else if (dataString != null) {
-                        results = new Uri[]{Uri.parse(dataString)};
-                    }
-                } else if (cameraImageUri != null) {
-                    results = new Uri[]{cameraImageUri};
-                }
-            }
-            filePathCallback.onReceiveValue(results);
-            filePathCallback = null;
         }
-    }
 
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK && webView.canGoBack()) {
-            webView.goBack();
-            return true;
-        }
-        return super.onKeyDown(keyCode, event);
+        finish();
     }
 }
+
