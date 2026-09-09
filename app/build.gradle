@@ -17,9 +17,9 @@ android {
     signingConfigs {
         release {
             storeFile file("keystore.jks")
-            storePassword System.getenv("KEY_STORE_PASSWORD") ?: "nexusai2024"
-            keyAlias System.getenv("KEY_ALIAS") ?: "nexusai"
-            keyPassword System.getenv("KEY_PASSWORD") ?: "nexusai2024"
+            storePassword "nexusai2024"
+            keyAlias "nexusai"
+            keyPassword "nexusai2024"
         }
     }
 
