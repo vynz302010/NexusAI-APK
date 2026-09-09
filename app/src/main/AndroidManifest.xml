@@ -32,6 +32,18 @@
                 android:name="android.support.customtabs.trusted.DEFAULT_URL"
                 android:value="https://ai-nexus.my.id/" />
 
+            <meta-data
+                android:name="android.support.customtabs.trusted.STATUS_BAR_COLOR"
+                android:resource="@color/browser_actions_bg_grey" />
+
+            <meta-data
+                android:name="android.support.customtabs.trusted.NAVIGATION_BAR_COLOR"
+                android:resource="@color/browser_actions_bg_grey" />
+
+            <meta-data
+                android:name="androix.browser.trusted.category.IMMERSIVE_MODE"
+                android:value="true" />
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
