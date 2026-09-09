@@ -14,20 +14,10 @@ android {
         versionName "1.0.0"
     }
 
-    signingConfigs {
-        release {
-            storeFile file("keystore.jks")
-            storePassword "nexusai2024"
-            keyAlias "nexusai"
-            keyPassword "nexusai2024"
-        }
-    }
-
     buildTypes {
         release {
             minifyEnabled false
             shrinkResources false
-            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
