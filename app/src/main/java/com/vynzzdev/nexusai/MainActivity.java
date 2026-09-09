@@ -80,14 +80,13 @@ public class MainActivity extends AppCompatActivity {
         // Cache
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
 
-        // Enable third-party cookies (CRITICAL for Google One Tap / Sign-in account selector)
+        // Enable third-party cookies & DOM storage
         android.webkit.CookieManager cookieManager = android.webkit.CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
         cookieManager.setAcceptThirdPartyCookies(webView, true);
 
-        // User agent - gunakan vanilla Chrome mobile UA agar Google One Tap mendeteksi akun Google HP otomatis
-        String defaultUA = settings.getUserAgentString();
-        settings.setUserAgentString(defaultUA.replace("; wv", ""));
+        // Native Chrome Custom User-Agent to allow Google One-Tap account bottomsheet
+        settings.setUserAgentString("Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
 
         // Mixed content (HTTP di dalam HTTPS)
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
