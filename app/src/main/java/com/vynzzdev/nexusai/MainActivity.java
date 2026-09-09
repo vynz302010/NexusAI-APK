@@ -29,7 +29,7 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TARGET_URL = "https://moore-xbox-sunshine-phones.trycloudflare.com/";
+    private static final String TARGET_URL = "https://ai-nexus.my.id/";
     private static final int FILE_CHOOSER_REQUEST = 1;
 
     private WebView webView;
